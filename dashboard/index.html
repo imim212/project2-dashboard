@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>품질 대시보드 포털 | Project 2</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --border: #e2e8f0;
+      --badge-eda: #0284c7;
+      --badge-eda-bg: #e0f2fe;
+      --badge-review: #7c3aed;
+      --badge-review-bg: #ede9fe;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .header-badge {
+      display: inline-block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--primary);
+      background-color: #eff6ff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-sub);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    main {
+      flex: 1;
+      max-width: 960px;
+      width: 100%;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.75rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      border-color: #cbd5e1;
+    }
+
+    .card-tag {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+
+    .tag-eda {
+      color: var(--badge-eda);
+      background-color: var(--badge-eda-bg);
+    }
+
+    .tag-review {
+      color: var(--badge-review);
+      background-color: var(--badge-review-bg);
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--text-main);
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-sub);
+      margin-bottom: 1.5rem;
+      flex: 1;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 8px;
+      background-color: var(--primary);
+      color: #ffffff;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn svg {
+      margin-left: 0.5rem;
+      width: 1rem;
+      height: 1rem;
+      transition: transform 0.15s ease;
+    }
+
+    .btn:hover svg {
+      transform: translateX(3px);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.875rem;
+      color: #94a3b8;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-badge">Project 2 Deployment Hub</div>
+    <h1>품질 검사 대시보드 포털</h1>
+    <p class="subtitle">협력사 입고검사 데이터 분석(EDA) 및 종합 평가 대시보드</p>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- 02회차 카드 -->
+      <div class="card">
+        <span class="card-tag tag-eda">02회차 결과물</span>
+        <h2>협력사 입고검사 EDA 대시보드</h2>
+        <p>
+          수집된 원시 입고검사 데이터의 정제 및 결측치/이상치 검토 결과를 바탕으로 협력사별, 부품 유형별 검사 현황과 불량 추이를 다각도로 탐색합니다.
+        </p>
+        <a href="./inspection-eda/inspection_dashboard.html" class="btn">
+          대시보드 열기
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
+        </a>
+      </div>
+
+      <!-- 03회차 카드 -->
+      <div class="card">
+        <span class="card-tag tag-review">03회차 결과물</span>
+        <h2>입고검사 협력사 종합 평가 대시보드</h2>
+        <p>
+          주요 협력사별 품질 평가 지표(가중치 종합 점수, 불량률, 규격 이탈 심층 분석)를 한눈에 파악하고 비교할 수 있는 종합 리뷰 화면입니다.
+        </p>
+        <a href="./supplier-review/supplier_review.html" class="btn">
+          대시보드 열기
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 Project 2 Dashboard Hub. Cloudflare Pages 배포용</p>
+  </footer>
+
+</body>
+</html>

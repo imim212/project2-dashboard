@@ -1,0 +1,7 @@
+# Local shortcuts & scripts
+*.bat
+*.url
+
+# OS generated files
+.DS_Store
+Thumbs.db
