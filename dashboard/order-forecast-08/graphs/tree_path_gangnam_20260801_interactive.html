@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>강남역매장 2026-08-01 예측 경로 추적</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 30px;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+      max-width: 1050px;
+      width: 100%;
+    }
+    .header-box {
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h2 {
+      margin: 0 0 8px 0;
+      color: #0f172a;
+      font-size: 1.4rem;
+    }
+    .info-bar {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      margin-top: 12px;
+    }
+    .info-item strong { color: #0f172a; }
+    .tree-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      margin-top: 20px;
+    }
+    .level {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+    }
+    .node {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 14px 18px;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+      opacity: 0.45;
+      transition: all 0.25s ease;
+    }
+    /* 거치는 활성 경로 노드 스타일 */
+    .node.active {
+      opacity: 1.0;
+      border: 3px solid #dc2626;
+      background: #fef2f2;
+      box-shadow: 0 8px 16px -2px rgba(220, 38, 38, 0.25);
+      transform: scale(1.04);
+    }
+    .node.active.leaf {
+      border: 3px solid #ea580c;
+      background: #fff7ed;
+      box-shadow: 0 8px 16px -2px rgba(234, 88, 12, 0.3);
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .node.active .tag {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .condition {
+      font-weight: 700;
+      font-size: 0.96rem;
+      color: #1e293b;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .node.active .condition {
+      color: #991b1b;
+      border-bottom-color: #fca5a5;
+    }
+    .eval-result {
+      margin-top: 8px;
+      padding: 6px;
+      border-radius: 6px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .stat {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin: 3px 0;
+    }
+    .node.active .stat {
+      color: #334155;
+    }
+    .badge-pred {
+      color: #c2410c;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+    .result-summary {
+      margin-top: 30px;
+      padding: 20px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      text-align: center;
+    }
+    .summary-card {
+      background: white;
+      padding: 14px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .summary-title {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .summary-val {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header-box">
+      <h2>🎯 강남역매장 (2026-08-01) 의사결정나무 예측 경로 추적</h2>
+      <div class="info-bar">
+        <div class="info-item">📍 <strong>매장:</strong> 강남역매장</div>
+        <div class="info-item">📅 <strong>날짜:</strong> 2026-08-01 (토요일)</div>
+        <div class="info-item">📊 <strong>최근7일평균주문건수 (입력값):</strong> <span style="color:#dc2626; font-weight:800;">373.14건</span></div>
+        <div class="info-item">📈 <strong>어제 주문량:</strong> 410건</div>
+        <div class="info-item">📅 <strong>지난주 토요일:</strong> 476건</div>
+      </div>
+    </div>
+
+    <div class="tree-wrapper">
+      <!-- 1단계: 루트 노드 (Node 0) -->
+      <div class="level">
+        <div class="node active">
+          <span class="tag">1단계 분기 [Node 0]</span>
+          <div class="condition">최근7일평균 ≤ 307.07건 ?</div>
+          <div class="stat">입력값: <strong>373.14건</strong></div>
+          <div class="eval-result">조건 만족 안함 (False ─▶ 우측 이동)</div>
+        </div>
+      </div>
+
+      <!-- 2단계: 중간 노드 (Node 1 vs Node 4) -->
+      <div class="level" style="gap: 140px;">
+        <div class="node">
+          <span class="tag">비활성 [Node 1]</span>
+          <div class="condition">최근7일평균 ≤ 258.71건 ?</div>
+          <div class="stat">기록수: 1,344개</div>
+          <div class="stat">평균: 243.18건</div>
+        </div>
+
+        <div class="node active">
+          <span class="tag">2단계 분기 [Node 4]</span>
+          <div class="condition">최근7일평균 ≤ 372.07건 ?</div>
+          <div class="stat">입력값: <strong>373.14건</strong></div>
+          <div class="eval-result">조건 만족 안함 (False ─▶ 우측 이동)</div>
+        </div>
+      </div>
+
+      <!-- 3단계: 최종 도착 잎 (Node 6) -->
+      <div class="level" style="gap: 20px;">
+        <div class="node">
+          <span class="tag">잎 1</span>
+          <div class="stat">기록수: 913개</div>
+          <div class="stat">예측: 223.25건</div>
+        </div>
+        <div class="node">
+          <span class="tag">잎 2</span>
+          <div class="stat">기록수: 431개</div>
+          <div class="stat">예측: 285.41건</div>
+        </div>
+        <div class="node">
+          <span class="tag">잎 3</span>
+          <div class="stat">기록수: 678개</div>
+          <div class="stat">예측: 338.26건</div>
+        </div>
+        <div class="node active leaf">
+          <span class="tag" style="background:#ffedd5; color:#c2410c;">최종 도착 [Node 6]</span>
+          <div class="condition">🍃 잎 4 (고매출 집단)</div>
+          <div class="stat">속한 과거 학습 기록수: <strong>828개</strong></div>
+          <div class="stat" style="margin-top:8px;">집단 평균 주문건수 (예측값):</div>
+          <div class="badge-pred">419.14건</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 요약 -->
+    <div class="result-summary">
+      <div class="summary-card">
+        <div class="summary-title">사전 입력값 (최근 7일 평균)</div>
+        <div class="summary-val" style="color:#2563eb;">373.14건</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">나무의 예측값 (도착 집단 평균)</div>
+        <div class="summary-val" style="color:#dc2626;">419.14건</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">당일 실제 주문건수</div>
+        <div class="summary-val" style="color:#059669;">421건</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

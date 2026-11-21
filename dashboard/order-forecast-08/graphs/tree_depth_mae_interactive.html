@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>의사결정나무 깊이별 MAE 비교</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; }
+    h2 { margin: 0 0 8px 0; color: #0f172a; font-size: 1.35rem; }
+    p.sub { color: #64748b; margin-bottom: 20px; font-size: 0.95rem; }
+    .chart-box { position: relative; height: 420px; width: 100%; }
+    .insights {
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: #f1f5f9;
+      border-radius: 12px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+    }
+    .insights strong { color: #0f172a; }
+    .badge-ok { color: #15803d; font-weight: bold; }
+    .badge-warn { color: #dc2626; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>📊 의사결정나무 깊이별 오차(MAE) 비교 대시보드</h2>
+    <p class="sub">나무의 깊이가 깊어질수록 학습 오차는 계속 줄어들지만, 평가 오차는 U자형 곡선을 그리며 <strong>과적합(Overfitting)</strong>이 발생합니다.</p>
+    
+    <div class="chart-box">
+      <canvas id="maeChart"></canvas>
+    </div>
+
+    <div class="insights">
+      <strong>💡 분석 인사이트:</strong><br>
+      • <strong>깊이 2 (과소적합):</strong> 모델이 너무 단순하여 학습 오차(42.58건)와 평가 오차(42.09건)가 모두 높습니다.<br>
+      • <strong>깊이 8 (<span class="badge-ok">최적 균형</span>):</strong> 평가 오차가 <strong>33.08건</strong>으로 나무 모델 중 가장 낮으며, 일반화 성능이 가장 우수합니다.<br>
+      • <strong>깊이 제한 없음 (<span class="badge-warn">극심한 과적합</span>):</strong> 학습 데이터를 100% 외워 학습 MAE는 <strong>0.00건</strong>이지만, 새로운 평가 데이터 오차는 <strong>39.78건</strong>으로 크게 반등합니다.
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('maeChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['깊이 2', '깊이 8', '깊이 제한 없음 (실제 깊이 27)'],
+        datasets: [
+          {
+            label: '학습 MAE (Train)',
+            data: [42.58, 23.17, 0.00],
+            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+            borderColor: '#2563eb',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: '평가 MAE (Validation)',
+            data: [42.09, 33.08, 39.78],
+            backgroundColor: 'rgba(239, 68, 68, 0.75)',
+            borderColor: '#dc2626',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.raw + '건';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'MAE (건)' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

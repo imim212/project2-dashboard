@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>대표 나무 vs 랜덤포레스트 비교</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 920px; margin: 0 auto; }
+    h2 { margin: 0 0 8px 0; color: #0f172a; font-size: 1.35rem; }
+    p.sub { color: #64748b; margin-bottom: 20px; font-size: 0.95rem; }
+    .chart-box { position: relative; height: 400px; width: 100%; }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .box.active {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+    .box-title { font-size: 0.85rem; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+    .box-val { font-size: 1.3rem; font-weight: 800; color: #0f172a; }
+    .box.active .box-val { color: #059669; }
+    .diff { font-size: 0.88rem; font-weight: 700; color: #2563eb; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🌲 대표 의사결정나무 vs 랜덤포레스트 성능 비교</h2>
+    <p class="sub">단일 나무 1개(깊이 8)의 한계를 극복하기 위해 300개의 나무를 앙상블(Bagging)한 결과입니다.</p>
+
+    <div class="chart-box">
+      <canvas id="compChart"></canvas>
+    </div>
+
+    <div class="comparison-grid">
+      <div class="box">
+        <div class="box-title">대표 의사결정나무 (깊이 8)</div>
+        <div class="box-val">33.08건</div>
+        <div class="diff" style="color:#64748b;">기준 (단일 나무 최선)</div>
+      </div>
+      <div class="box active">
+        <div class="box-title">랜덤포레스트 (나무 300개)</div>
+        <div class="box-val">30.49건</div>
+        <div class="diff" style="color:#059669;">▼ 2.59건 개선 (약 7.8% 감소)</div>
+      </div>
+      <div class="box">
+        <div class="box-title">선형회귀 (07회차 기준선)</div>
+        <div class="box-val">27.16건</div>
+        <div class="diff" style="color:#2563eb;">가장 우수한 일반화 성능</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('compChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['선형회귀', '대표 의사결정나무 (깊이 8)', '단일 나무 (깊이 제한 없음)', '랜덤포레스트 (나무 300개)'],
+        datasets: [
+          {
+            label: '학습 MAE (Train)',
+            data: [23.45, 23.17, 0.00, 9.75],
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: '#2563eb',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: '평가 MAE (Validation)',
+            data: [27.16, 33.08, 39.78, 30.49],
+            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+            borderColor: '#dc2626',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'MAE (건)' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>매장 주문량 예측 모델 검토 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    /* Header */
+    header {
+      background: var(--card-bg);
+      padding: 28px 32px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-live {
+      background: #dbeafe;
+      color: var(--primary-dark);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      border: 1px solid #bfdbfe;
+    }
+    .header-desc {
+      color: var(--text-muted);
+      margin-top: 8px;
+      font-size: 0.96rem;
+    }
+    .meta-bar {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .meta-item strong { color: var(--text); }
+
+    /* Section Card */
+    .section-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 16px;
+    }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-tag {
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    /* Grid Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Table Styling */
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.92rem;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #334155;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr.winner-row {
+      background: #eff6ff;
+    }
+    tr.winner-row td {
+      font-weight: 600;
+    }
+    .winner-badge {
+      background: #2563eb;
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    /* Chart Box */
+    .chart-wrapper {
+      position: relative;
+      height: 350px;
+      width: 100%;
+    }
+
+    /* Insight Box */
+    .conclusion-box {
+      margin-top: 24px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .conclusion-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .conclusion-content h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 6px;
+    }
+    .conclusion-content p {
+      font-size: 0.92rem;
+      color: #15803d;
+      line-height: 1.65;
+    }
+
+    /* Specs Grid */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .spec-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .spec-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .spec-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .spec-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Placeholder for future sections */
+    .placeholder-banner {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-top">
+        <h1>📊 매장 주문량 예측 모델 검토 대시보드</h1>
+        <span class="badge-live">Project 2 · 08회차 검토 보고서</span>
+      </div>
+      <p class="header-desc">
+        시차정보(전일·전주 동요일·최근 7일 평균)를 포함한 동일 입력 조건에서 <strong>선형회귀</strong>, <strong>의사결정나무</strong>, <strong>랜덤포레스트</strong> 3개 예측 모델의 정확도를 평가하고 매장 운영 적합도를 검토합니다.
+      </p>
+      <div class="meta-bar">
+        <div class="meta-item">📅 <strong>학습 기간:</strong> 2024-11-08 ~ 2026-05-31 (2,850건)</div>
+        <div class="meta-item">🧪 <strong>검증·비교 기간:</strong> 2026-06-01 ~ 2026-08-31 (460건)</div>
+        <div class="meta-item">🎯 <strong>최종 평가 기간:</strong> 2026-09-01 ~ 2026-10-31 (305건)</div>
+        <div class="meta-item">🏪 <strong>대상 매장:</strong> 강남역, 판교역, 수원역, 양재역, 잠실역 (5개점)</div>
+      </div>
+    </header>
+
+    <!-- SECTION 01: 모델별 성능 -->
+    <section class="section-card" id="section-01">
+      <div class="section-header">
+        <div class="section-title">
+          <span>01 모델별 성능 비교</span>
+          <span class="section-tag">6~8월 검증 기간 (460건)</span>
+        </div>
+        <span style="font-size: 0.88rem; color: #64748b;">평가 지표: MAE(평균 절대 오차), RMSE</span>
+      </div>
+
+      <!-- 입력 구성 및 실험 조건 안내 -->
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="spec-label">비교 대상 3대 모델</div>
+          <div class="spec-val">선형회귀 · 대표 나무 · 랜덤포레스트</div>
+          <div class="spec-sub">동일 입력 데이터 및 분할 기준 적용</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">총 입력 변수 (29개)</div>
+          <div class="spec-val">수치형 8개 + 범주형 더미 21개</div>
+          <div class="spec-sub">시차정보 3종(전일, 전주, 7일평균) 포함</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">최우수 추천 모델</div>
+          <div class="spec-val" style="color: #2563eb;">선형회귀 (Linear Regression)</div>
+          <div class="spec-sub">검증 MAE 27.16건 (전체 1위)</div>
+        </div>
+      </div>
+
+      <!-- 표 및 차트 2단 그리드 -->
+      <div class="grid-2">
+        <!-- 좌측: 지표 비교 표 -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>모델명</th>
+                <th style="text-align: right;">학습 MAE</th>
+                <th style="text-align: right;">평가 MAE</th>
+                <th style="text-align: right;">평가 RMSE</th>
+                <th style="text-align: center;">순위</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="winner-row">
+                <td>
+                  <span style="color:#2563eb;">선형회귀</span>
+                  <span class="winner-badge">추천 1위</span>
+                </td>
+                <td style="text-align: right;">23.45건</td>
+                <td style="text-align: right; color:#2563eb; font-weight:800;">27.16건</td>
+                <td style="text-align: right;">34.03건</td>
+                <td style="text-align: center;">🥇 1위</td>
+              </tr>
+              <tr>
+                <td>랜덤포레스트 <span style="font-size:0.78rem; color:#64748b;">(나무 300개)</span></td>
+                <td style="text-align: right;">9.75건</td>
+                <td style="text-align: right; font-weight:700;">30.49건</td>
+                <td style="text-align: right;">38.39건</td>
+                <td style="text-align: center;">🥈 2위</td>
+              </tr>
+              <tr>
+                <td>대표 의사결정나무 <span style="font-size:0.78rem; color:#64748b;">(깊이 8)</span></td>
+                <td style="text-align: right;">23.17건</td>
+                <td style="text-align: right; font-weight:700;">33.08건</td>
+                <td style="text-align: right;">43.55건</td>
+                <td style="text-align: center;">🥉 3위</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 10px;">
+            * 수치는 일별 매장 단위 기준 (오차가 작을수록 정확한 예측을 의미합니다).
+          </p>
+        </div>
+
+        <!-- 우측: 인터랙티브 막대그래프 -->
+        <div>
+          <div class="chart-wrapper">
+            <canvas id="modelCompChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 짧은 결론 -->
+      <div class="conclusion-box">
+        <div class="conclusion-icon">💡</div>
+        <div class="conclusion-content">
+          <h4>01 검토 결론: 단순한 선형 모델이 복잡한 앙상블보다 실전에서 더 정확함</h4>
+          <p>
+            6~8월 평가 기간(460건)에서 <strong>선형회귀(MAE 27.16건, RMSE 34.03건)</strong>가 300개 나무를 결합한 랜덤포레스트(30.49건)와 대표 의사결정나무(33.08건)를 모두 앞서며 가장 낮은 오차를 달성했습니다.<br>
+            카페 주문량 예측에서는 알고리즘이 복잡하다고 무조건 좋은 것이 아니며, 시차 실적(어제 실적, 7일 평균)과 오늘 주문량 사이의 <strong>선형적 비례 관계</strong>를 왜곡 없이 반영한 선형회귀가 새로운 기간에 대한 일반화 능력과 운영 해석력 모두에서 가장 우수합니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 02: 나무 깊이와 과적합 -->
+    <section class="section-card" id="section-02">
+      <div class="section-header">
+        <div class="section-title">
+          <span>02 나무 깊이와 과적합 분석</span>
+          <span class="section-tag" style="background:#fee2e2; color:#b91c1c;">과적합(Overfitting) 메커니즘</span>
+        </div>
+        <span style="font-size: 0.88rem; color: #64748b;">의사결정나무: 깊이 2 vs 8 vs 제한 없음</span>
+      </div>
+
+      <!-- 핵심 요약 카드 3종 -->
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="spec-label">깊이 2 (단순 규칙)</div>
+          <div class="spec-val" style="color:#d97706;">과소적합 (Underfitting)</div>
+          <div class="spec-sub">학습 42.58건 · 평가 42.09건 (패턴 부족)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">깊이 8 (대표 나무 ⭐)</div>
+          <div class="spec-val" style="color:#15803d;">최적 균형 (Optimal)</div>
+          <div class="spec-sub">평가 MAE 33.08건 (나무 모델 중 최저)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">깊이 제한 없음 (깊이 27)</div>
+          <div class="spec-val" style="color:#dc2626;">극심한 과적합 (Overfitting)</div>
+          <div class="spec-sub">학습 0.00건(암기) ─▶ 평가 39.78건(급증)</div>
+        </div>
+      </div>
+
+      <!-- 2단 레이아웃: 좌측 RMSE 표 / 우측 MAE 인터랙티브 그래프 -->
+      <div class="grid-2">
+        <!-- 좌측: RMSE 지표 비교 표 -->
+        <div class="table-container">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #334155; margin-bottom: 12px;">📋 의사결정나무 깊이별 RMSE 지표 표</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>모델명</th>
+                <th style="text-align: right;">학습 RMSE</th>
+                <th style="text-align: right;">평가 RMSE</th>
+                <th style="text-align: center;">상태 판정</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>의사결정나무 - 깊이 2</td>
+                <td style="text-align: right;">55.55건</td>
+                <td style="text-align: right; color:#d97706; font-weight:700;">56.11건</td>
+                <td style="text-align: center;"><span style="color:#d97706; font-weight:600;">과소적합</span></td>
+              </tr>
+              <tr class="winner-row">
+                <td>
+                  <span style="color:#15803d;">의사결정나무 - 깊이 8</span>
+                  <span class="winner-badge" style="background:#15803d;">대표 선정</span>
+                </td>
+                <td style="text-align: right;">30.94건</td>
+                <td style="text-align: right; color:#15803d; font-weight:800;">43.55건</td>
+                <td style="text-align: center;"><span style="color:#15803d; font-weight:700;">최적 균형</span></td>
+              </tr>
+              <tr>
+                <td>의사결정나무 - 깊이 제한 없음</td>
+                <td style="text-align: right; color:#dc2626; font-weight:700;">0.00건</td>
+                <td style="text-align: right; color:#dc2626; font-weight:700;">50.71건</td>
+                <td style="text-align: center;"><span style="color:#dc2626; font-weight:700;">과적합 발생</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 10px;">
+            * 깊이 제한 없음 모델은 학습 RMSE가 0.00건이지만 평가 RMSE는 50.71건으로 치솟습니다.
+          </p>
+        </div>
+
+        <!-- 우측: 인터랙티브 깊이별 MAE 비교 차트 -->
+        <div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #334155; margin-bottom: 12px;">📊 깊이별 학습 vs 평가 MAE 추세 (과적합 곡선)</h4>
+          <div class="chart-wrapper">
+            <canvas id="treeDepthChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 결론 박스 -->
+      <div class="conclusion-box" style="background: #fef2f2; border-color: #fecaca;">
+        <div class="conclusion-icon">⚠️</div>
+        <div class="conclusion-content">
+          <h4 style="color: #991b1b;">02 분석 결론: 학습 오차가 0이라고 해서 실전에서 좋은 모델이 아님</h4>
+          <p style="color: #b91c1c;">
+            • <strong>학습 오차(Train MAE):</strong> 깊이가 깊어질수록 42.58건 ─▶ 23.17건 ─▶ <strong>0.00건</strong>으로 급감하며, 깊이 제한 없음 모델은 2,850개의 과거 학습 기록을 100% 외웠습니다.<br>
+            • <strong>평가 오차(Validation MAE):</strong> 반면 새로운 6~8월 평가 데이터에서는 42.09건 ─▶ <strong>33.08건(최저점)</strong> ─▶ <strong>39.78건</strong>으로 다시 U자형으로 반등하는 전형적인 과적합이 발생했습니다.<br>
+            • 따라서 모델 선택 시 과거 데이터의 오차(0.00건)에 속지 말고, 독립적인 검증 평가에서 오차가 가장 낮은 <strong>'깊이 8'</strong>을 대표 나무로 선정해야 일반화 성능을 보장받을 수 있습니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 03: 매장별 예측 비교 -->
+    <section class="section-card" id="section-03">
+      <div class="section-header">
+        <div class="section-title">
+          <span>03 매장별 예측 비교 및 일별 추이</span>
+          <span class="section-tag" style="background:#e0e7ff; color:#3730a3;">6~8월 평가 기간 (92일 고정)</span>
+        </div>
+        <span style="font-size: 0.88rem; color: #64748b;">매장별 맞춤 오차 및 일별 시계열 비교</span>
+      </div>
+
+      <!-- 1. 전체 매장의 모델별 MAE 비교표 -->
+      <div style="margin-bottom: 28px;">
+        <h4 style="font-size: 0.98rem; font-weight: 700; color: #1e293b; margin-bottom: 12px;">📋 5개 전체 매장 모델별 평가 MAE 비교표</h4>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>매장명</th>
+                <th style="text-align: right;">선형회귀 MAE</th>
+                <th style="text-align: right;">대표 나무 (깊이 8)</th>
+                <th style="text-align: right;">랜덤포레스트</th>
+                <th style="text-align: center;">최적 모델</th>
+                <th style="text-align: left;">매장별 특이사항</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background: #fff7ed;">
+                <td style="font-weight: 700;">판교역매장</td>
+                <td style="text-align: right; color:#2563eb; font-weight:800;">27.06건</td>
+                <td style="text-align: right; color:#ef4444;">39.36건</td>
+                <td style="text-align: right;">31.91건</td>
+                <td style="text-align: center;"><span class="winner-badge">선형회귀 🥇</span></td>
+                <td style="color:#c2410c; font-size:0.85rem;">모델 간 격차 최대(12.3건), 고매출일 단일 나무 급락</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700;">수원역매장</td>
+                <td style="text-align: right; color:#2563eb; font-weight:800;">22.58건</td>
+                <td style="text-align: right;">28.24건</td>
+                <td style="text-align: right;">25.39건</td>
+                <td style="text-align: center;"><span class="winner-badge">선형회귀 🥇</span></td>
+                <td style="color:#64748b; font-size:0.85rem;">전체 매장 중 최저 오차 달성 (가장 안정적)</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700;">양재역매장</td>
+                <td style="text-align: right; color:#2563eb; font-weight:800;">25.92건</td>
+                <td style="text-align: right;">34.85건</td>
+                <td style="text-align: right;">31.69건</td>
+                <td style="text-align: center;"><span class="winner-badge">선형회귀 🥇</span></td>
+                <td style="color:#64748b; font-size:0.85rem;">선형회귀가 비선형 모델 대비 6~9건 우세</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700;">잠실역매장</td>
+                <td style="text-align: right; color:#2563eb; font-weight:800;">33.24건</td>
+                <td style="text-align: right;">33.94건</td>
+                <td style="text-align: right;">36.98건</td>
+                <td style="text-align: center;"><span class="winner-badge">선형회귀 🥇</span></td>
+                <td style="color:#64748b; font-size:0.85rem;">행사·주말 유입으로 변동성 큼, 랜덤포레스트 부진</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700;">강남역매장</td>
+                <td style="text-align: right;">27.02건</td>
+                <td style="text-align: right;">29.00건</td>
+                <td style="text-align: right; color:#10b981; font-weight:800;">26.47건</td>
+                <td style="text-align: center;"><span class="winner-badge" style="background:#10b981;">랜덤포레스트</span></td>
+                <td style="color:#059669; font-size:0.85rem;">유일하게 랜덤포레스트가 소폭 우세 (플래그십)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. 매장 선택 드롭다운 및 동적 시각화 카드 -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">🔍 매장별 상세 시계열 예측 비교 (6~8월)</h4>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">매장을 변경하면 세 모델의 오차, 일별 실제 vs 예측 선그래프, 세부 해석이 동적으로 업데이트됩니다.</p>
+          </div>
+          <div>
+            <label for="storeSelect03" style="font-weight: 700; font-size: 0.92rem; margin-right: 8px;">분석 매장 선택:</label>
+            <select id="storeSelect03" onchange="updateStoreSection()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.95rem; background: white; cursor: pointer;">
+              <option value="판교역매장" selected>판교역매장 (격차 최대 ⭐)</option>
+              <option value="강남역매장">강남역매장 (플래그십 본점)</option>
+              <option value="수원역매장">수원역매장 (최저 오차)</option>
+              <option value="양재역매장">양재역매장</option>
+              <option value="잠실역매장">잠실역매장</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 선택 매장 지표 KPI 카드 3종 -->
+        <div class="spec-grid" style="margin-bottom: 20px;">
+          <div class="spec-card" style="background: white;">
+            <div class="spec-label">선형회귀 평가 MAE</div>
+            <div class="spec-val" id="s3-lr-mae" style="color: #2563eb; font-size: 1.25rem;">27.06건</div>
+            <div class="spec-sub">기준 선형 모델</div>
+          </div>
+          <div class="spec-card" style="background: white;">
+            <div class="spec-label">대표 나무 (깊이 8) MAE</div>
+            <div class="spec-val" id="s3-tree-mae" style="color: #ef4444; font-size: 1.25rem;">39.36건</div>
+            <div class="spec-sub">단일 의사결정나무</div>
+          </div>
+          <div class="spec-card" style="background: white;">
+            <div class="spec-label">랜덤포레스트 MAE</div>
+            <div class="spec-val" id="s3-rf-mae" style="color: #10b981; font-size: 1.25rem;">31.91건</div>
+            <div class="spec-sub">300개 앙상블 모델</div>
+          </div>
+        </div>
+
+        <!-- 시계열 선그래프 -->
+        <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 0.88rem; font-weight: 600; color: #475569;" id="s3-chart-title">판교역매장 실제 주문량 vs 3대 모델 예측 (2026.06~08)</span>
+            <span style="font-size: 0.78rem; color: #94a3b8;">* 상단 범례를 클릭하면 특정 모델의 선을 켜거나 끌 수 있습니다.</span>
+          </div>
+          <div class="chart-wrapper" style="height: 380px;">
+            <canvas id="storeTimeseriesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 매장별 맞춤 해석 카드 -->
+        <div class="conclusion-box" style="margin-top: 18px; background: white; border: 1px solid #cbd5e1;">
+          <div class="conclusion-icon">📍</div>
+          <div class="conclusion-content">
+            <h4 id="s3-interp-title" style="color: #0f172a;">판교역매장 분석 의견</h4>
+            <p id="s3-interp-desc" style="color: #334155;">
+              8월 하순(8/27 등) 주문량이 547건으로 치솟는 고매출 구간에서 단일 의사결정나무는 과거 학습 범위(360.7건)에 갇혀 심각한 과소 예측(오차 186.3건)을 보였습니다. 반면 선형회귀(MAE 27.06건)는 영업시간 및 시차 추세를 안정적으로 비례 반영하여 3개 모델 중 가장 뛰어난 적중률을 기록했습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 04: 모델 검토 의견 및 최종 실전 평가 -->
+    <section class="section-card" id="section-04">
+      <div class="section-header">
+        <div class="section-title">
+          <span>04 모델 검토 의견 및 매장 운영 활용안</span>
+          <span class="section-tag" style="background:#dcfce7; color:#15803d;">최종 운영 가이드</span>
+        </div>
+        <span style="font-size: 0.88rem; color: #64748b;">모델 선정 근거 · 운영 주의사항 · 9~10월 최종 검증</span>
+      </div>
+
+      <!-- 상단 3단 핵심 요약 카드 -->
+      <div class="spec-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+        <div class="spec-card" style="border-top: 4px solid #2563eb; background: white;">
+          <div class="spec-label" style="color: #2563eb;">① 최종 선택 모델</div>
+          <div class="spec-val" style="font-size: 1.2rem; color: #0f172a; margin: 6px 0;">선형회귀 (Linear Regression)</div>
+          <div class="spec-sub" style="line-height: 1.6;">
+            • 07회차 시차정보(전일·전주·7일평균) 추가 모델<br>
+            • 변수별 가중치(계수)가 투명하게 해석 가능한 화이트박스 알고리즘
+          </div>
+        </div>
+
+        <div class="spec-card" style="border-top: 4px solid #10b981; background: white;">
+          <div class="spec-label" style="color: #059669;">② 6~8월 선택 근거 (실제 수치)</div>
+          <div class="spec-val" style="font-size: 1.2rem; color: #0f172a; margin: 6px 0;">검증 MAE 27.16건 (전체 1위)</div>
+          <div class="spec-sub" style="line-height: 1.6;">
+            • 랜덤포레스트(30.49건), 대표 나무(33.08건) 제치고 최저 오차<br>
+            • 5개 매장 중 4개 매장(판교, 양재, 수원, 잠실)에서 1위 달성<br>
+            • 고매출일 외삽(Extrapolation) 능력 우수
+          </div>
+        </div>
+
+        <div class="spec-card" style="border-top: 4px solid #f59e0b; background: white;">
+          <div class="spec-label" style="color: #d97706;">③ 운영 시 주의할 점</div>
+          <div class="spec-val" style="font-size: 1.2rem; color: #0f172a; margin: 6px 0;">현장 실무 체크포인트</div>
+          <div class="spec-sub" style="line-height: 1.6;">
+            • <strong>신규 매장:</strong> 오픈 초기 7일간은 시차 실적이 없어 예측 불가 (대체 기준 필요)<br>
+            • <strong>특이 행사:</strong> 15% 이상 파격 할인, 초대형 축제 시 점주 수동 보정<br>
+            • <strong>데이터 적시성:</strong> 전날 마감 실적이 지연 없이 익일 새벽 갱신 필수
+          </div>
+        </div>
+      </div>
+
+      <!-- 별도 소영역: 9~10월 최종 평가 -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 26px;">
+        <!-- 기간 구분 배너 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px;">
+          <div>
+            <h4 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+              <span>🎯 9~10월 최종 평가 (Test Period 결과)</span>
+              <span style="font-size: 0.78rem; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; font-weight: 700;">미지의 기간 검증</span>
+            </h4>
+            <p style="font-size: 0.86rem; color: #64748b; margin-top: 4px;">
+              ⚠️ <strong>기간 구분 안내:</strong> 6~8월은 모델 비교·선정 기간이었으며, 본 9~10월(61일) 평가는 선택을 마친 선형회귀 모델을 <strong>재학습 없이</strong> 미래 실전 데이터에 단 1회 적용한 결과입니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 최종 평가 지표 표 및 매장 선택 -->
+        <div class="grid-2" style="margin-bottom: 22px;">
+          <!-- 좌측: 월별/전체 최종 평가 지표 표 -->
+          <div class="table-container">
+            <h5 style="font-size: 0.92rem; font-weight: 700; color: #334155; margin-bottom: 10px;">📋 선형회귀 9~10월 월별·전체 최종 평가 지표</h5>
+            <table>
+              <thead>
+                <tr>
+                  <th>평가 구간</th>
+                  <th style="text-align: right;">기록 수</th>
+                  <th style="text-align: right;">MAE (평균 절대 오차)</th>
+                  <th style="text-align: right;">RMSE</th>
+                  <th style="text-align: center;">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2026년 9월</td>
+                  <td style="text-align: right;">150건</td>
+                  <td style="text-align: right; font-weight:700;">23.22건</td>
+                  <td style="text-align: right;">30.07건</td>
+                  <td style="text-align: center;"><span style="color:#059669; font-size:0.82rem; font-weight:600;">학습 오차 수준</span></td>
+                </tr>
+                <tr>
+                  <td>2026년 10월</td>
+                  <td style="text-align: right;">155건</td>
+                  <td style="text-align: right; font-weight:700;">24.46건</td>
+                  <td style="text-align: right;">30.08건</td>
+                  <td style="text-align: center;"><span style="color:#059669; font-size:0.82rem; font-weight:600;">안정적 유지</span></td>
+                </tr>
+                <tr class="winner-row">
+                  <td><strong>9~10월 전체 (Test)</strong></td>
+                  <td style="text-align: right; font-weight:800;">305건</td>
+                  <td style="text-align: right; color:#2563eb; font-weight:800; font-size:1.05rem;">23.85건</td>
+                  <td style="text-align: right; font-weight:800;">30.07건</td>
+                  <td style="text-align: center;"><span class="winner-badge">검증 대비 오차 감소</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 우측: 매장 선택 컨트롤 및 매장 요약 -->
+          <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <label for="storeSelect04" style="font-weight: 700; font-size: 0.92rem; color: #0f172a; display: block; margin-bottom: 8px;">최종 평가 대상 매장 선택:</label>
+              <select id="storeSelect04" onchange="updateFinalSection()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.95rem; background: #f8fafc; cursor: pointer;">
+                <option value="강남역매장" selected>강남역매장 (본점 플래그십)</option>
+                <option value="판교역매장">판교역매장</option>
+                <option value="수원역매장">수원역매장 (최저 오차 18.4건)</option>
+                <option value="양재역매장">양재역매장</option>
+                <option value="잠실역매장">잠실역매장</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <div style="flex: 1; background: #eff6ff; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.78rem; color: #1e40af; font-weight: 600;">선택 매장 9~10월 MAE</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #2563eb; margin-top: 2px;" id="s4-store-mae">30.50건</div>
+              </div>
+              <div style="flex: 1; background: #f1f5f9; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.78rem; color: #475569; font-weight: 600;">선택 매장 9~10월 RMSE</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 2px;" id="s4-store-rmse">36.53건</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 매장별 9~10월 실제 vs 예측 선그래프 -->
+        <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 0.9rem; font-weight: 700; color: #1e293b;" id="s4-chart-title">강남역매장 9~10월 실제 주문량 vs 선형회귀 최종 예측</span>
+            <span style="font-size: 0.78rem; color: #94a3b8;">* 마우스 호버 시 일별 실제값과 예측 오차를 확인할 수 있습니다.</span>
+          </div>
+          <div class="chart-wrapper" style="height: 360px;">
+            <canvas id="finalTimeseriesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 최종 확인 결론 박스 -->
+        <div class="conclusion-box" style="margin-top: 20px; background: #ecfdf5; border-color: #a7f3d0;">
+          <div class="conclusion-icon">✅</div>
+          <div class="conclusion-content">
+            <h4 style="color: #065f46;">최종 평가에서 확인한 점 (결론)</h4>
+            <p style="color: #047857;">
+              6~8월에 선택한 선형회귀 모델을 재학습 없이 9~10월(305건)에 그대로 적용한 결과, <strong>MAE가 23.85건(9월 23.22건, 10월 24.46건)</strong>으로 검증 기간(27.16건)보다 오히려 오차가 감소하며 학습 오차(23.45건) 수준의 완벽한 안정성을 보여주었습니다.<br>
+              매일 전날까지의 실제 실적을 시차 변수로 갱신하는 운영 방식을 유지한다면, 가을철 계절 변화에도 불구하고 현장 발주 및 근무 편성에 매우 신뢰성 높은 기준을 제공할 수 있음을 최종 검증했습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // 내장 데이터셋 (외부 CSV 호출 불필요)
+    const metricsData = [
+      { model: "선형회귀", trainMae: 23.45, evalMae: 27.16, evalRmse: 34.03, color: "#2563eb" },
+      { model: "랜덤포레스트 (300개)", trainMae: 9.75, evalMae: 30.49, evalRmse: 38.39, color: "#10b981" },
+      { model: "대표 의사결정나무 (깊이 8)", trainMae: 23.17, evalMae: 33.08, evalRmse: 43.55, color: "#f59e0b" }
+    ];
+
+    const ctx = document.getElementById('modelCompChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: metricsData.map(d => d.model),
+        datasets: [
+          {
+            label: '평가 MAE (실제 검증 오차)',
+            data: metricsData.map(d => d.evalMae),
+            backgroundColor: ['rgba(37, 99, 235, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)'],
+            borderColor: ['#1d4ed8', '#059669', '#d97706'],
+            borderWidth: 1.5,
+            borderRadius: 8
+          },
+          {
+            label: '평가 RMSE (큰 오차 민감도)',
+            data: metricsData.map(d => d.evalRmse),
+            backgroundColor: 'rgba(148, 163, 184, 0.5)',
+            borderColor: '#64748b',
+            borderWidth: 1.5,
+            borderRadius: 8
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 14, font: { weight: '600' } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.raw + '건';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 50,
+            title: { display: true, text: '오차 (건수 단위)', font: { weight: 'bold' } },
+            grid: { color: '#f1f5f9' }
+          },
+          x: {
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    // 섹션 2: 의사결정나무 깊이별 MAE 차트
+    const treeCtx = document.getElementById('treeDepthChart').getContext('2d');
+    new Chart(treeCtx, {
+      type: 'bar',
+      data: {
+        labels: ['깊이 2 (단순)', '깊이 8 (최적)', '제한 없음 (실제 깊이 27)'],
+        datasets: [
+          {
+            label: '학습 MAE (과거 기록)',
+            data: [42.58, 23.17, 0.00],
+            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+            borderColor: '#2563eb',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: '평가 MAE (신규 6~8월)',
+            data: [42.09, 33.08, 39.78],
+            backgroundColor: 'rgba(239, 68, 68, 0.75)',
+            borderColor: '#dc2626',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 14, font: { weight: '600' } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + '건'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 50,
+            title: { display: true, text: 'MAE (건수)', font: { weight: 'bold' } },
+            grid: { color: '#f1f5f9' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 섹션 3: 매장별 시계열 데이터 및 인터랙티브 제어
+    const storeData03 = {"판교역매장": {"dates": ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31"], "actual": [425, 422, 434, 446, 471, 523, 573, 401, 421, 381, 432, 416, 498, 537, 428, 434, 458, 483, 450, 612, 486, 389, 391, 414, 392, 418, 453, 441, 394, 417, 458, 405, 423, 471, 516, 469, 441, 401, 483, 469, 457, 524, 432, 451, 527, 479, 552, 463, 605, 436, 454, 425, 381, 477, 529, 613, 491, 448, 483, 465, 445, 525, 504, 471, 433, 474, 464, 526, 535, 504, 445, 455, 495, 500, 463, 546, 538, 483, 459, 426, 448, 503, 532, 594, 601, 589, 490, 547, 486, 523, 541, 419], "linear": [403.9, 402.8, 431.4, 427.4, 434.9, 492.3, 539.5, 459.2, 458.0, 433.4, 424.4, 420.9, 469.2, 477.7, 414.2, 408.1, 437.0, 467.4, 472.2, 612.1, 509.3, 436.6, 437.3, 408.3, 387.3, 427.1, 418.4, 424.2, 364.7, 382.4, 434.2, 435.1, 409.0, 432.2, 448.4, 433.3, 437.5, 447.1, 464.3, 442.5, 465.0, 452.6, 436.1, 432.1, 484.7, 461.3, 536.3, 484.8, 557.3, 449.2, 427.9, 474.0, 430.8, 454.2, 471.3, 605.1, 510.5, 457.2, 451.4, 462.1, 464.6, 491.6, 462.5, 459.4, 429.8, 438.4, 451.2, 518.9, 501.1, 482.2, 417.3, 442.0, 460.7, 475.8, 470.3, 499.8, 507.3, 493.8, 482.9, 448.4, 448.5, 450.7, 498.5, 457.6, 564.4, 610.2, 506.1, 525.1, 509.0, 538.6, 550.2, 479.1], "tree": [394.2, 394.2, 399.4, 399.4, 399.4, 449.0, 485.0, 416.3, 446.4, 446.4, 416.3, 416.3, 450.0, 446.4, 394.2, 416.3, 416.3, 416.3, 416.3, 680.0, 482.4, 449.3, 416.3, 416.3, 416.3, 416.3, 450.0, 394.2, 394.2, 399.4, 399.4, 399.4, 394.2, 453.6, 394.2, 399.4, 446.4, 416.3, 416.3, 416.3, 513.0, 416.3, 416.3, 416.3, 446.4, 449.3, 449.3, 606.5, 579.5, 449.3, 449.3, 449.3, 449.3, 446.4, 513.0, 626.0, 546.8, 449.3, 449.3, 449.3, 449.3, 481.5, 529.9, 449.3, 449.3, 449.3, 446.4, 446.4, 513.0, 529.9, 449.3, 449.3, 449.3, 449.3, 449.3, 513.0, 529.9, 449.3, 449.3, 449.3, 449.3, 449.3, 513.0, 529.9, 546.8, 592.5, 360.7, 360.7, 360.7, 513.0, 529.9, 360.7], "rf": [387.3, 399.0, 389.1, 408.3, 417.3, 474.3, 553.5, 433.5, 434.8, 428.3, 420.7, 414.6, 465.8, 450.3, 396.9, 412.7, 409.8, 435.3, 444.1, 613.3, 492.0, 452.8, 432.0, 404.9, 406.0, 414.6, 438.7, 421.4, 372.5, 400.8, 419.1, 420.0, 399.0, 436.7, 431.5, 431.7, 425.6, 430.6, 435.6, 430.6, 493.6, 471.9, 451.6, 427.9, 434.0, 450.0, 495.1, 519.5, 550.6, 443.3, 429.9, 472.3, 434.1, 420.3, 496.8, 596.8, 549.0, 449.2, 442.9, 432.3, 452.6, 477.8, 480.0, 481.0, 440.3, 448.2, 449.2, 468.4, 533.5, 500.6, 451.8, 448.6, 463.0, 469.1, 463.9, 494.9, 531.0, 455.3, 451.7, 442.9, 440.6, 447.5, 528.8, 485.6, 584.7, 583.8, 449.9, 450.4, 405.7, 499.5, 479.5, 460.3], "lr_mae": 27.06, "tree_mae": 39.36, "rf_mae": 31.91}, "강남역매장": {"dates": ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31"], "actual": [295, 314, 349, 368, 352, 417, 342, 289, 314, 345, 323, 325, 346, 306, 288, 318, 368, 322, 433, 353, 369, 359, 291, 413, 315, 355, 341, 399, 320, 335, 330, 331, 404, 375, 338, 393, 338, 318, 351, 339, 325, 340, 299, 340, 353, 344, 379, 388, 348, 281, 363, 289, 346, 491, 476, 343, 330, 363, 344, 346, 410, 421, 337, 386, 372, 429, 394, 427, 416, 504, 441, 433, 346, 368, 391, 265, 340, 350, 269, 337, 405, 362, 388, 477, 332, 345, 320, 324, 337, 355, 302, 374], "linear": [293.6, 326.2, 359.2, 395.2, 379.0, 453.4, 395.4, 316.6, 314.7, 336.7, 356.9, 358.8, 360.6, 331.1, 290.7, 311.3, 323.7, 318.0, 386.9, 382.8, 382.6, 338.8, 302.3, 369.9, 357.4, 336.4, 350.8, 355.2, 354.2, 330.9, 353.7, 327.5, 377.9, 407.5, 361.3, 331.5, 355.2, 339.9, 386.3, 384.1, 368.9, 354.3, 298.7, 315.7, 352.3, 348.4, 386.5, 410.0, 371.2, 316.6, 353.1, 309.9, 310.0, 460.6, 496.5, 376.6, 345.4, 358.2, 331.6, 325.1, 391.0, 383.5, 378.6, 352.5, 372.8, 405.9, 376.3, 401.0, 451.0, 535.2, 502.2, 464.4, 389.8, 410.7, 420.1, 447.8, 373.4, 361.0, 335.8, 322.2, 379.3, 353.8, 362.6, 481.0, 366.8, 341.8, 351.8, 356.3, 395.4, 396.6, 346.9, 409.8], "tree": [300.2, 325.1, 325.1, 450.0, 366.4, 392.9, 351.9, 351.9, 351.9, 327.6, 366.4, 325.1, 361.9, 344.8, 325.1, 325.1, 325.1, 344.8, 325.1, 361.9, 366.4, 366.4, 308.1, 366.4, 351.9, 342.5, 308.1, 351.9, 351.9, 351.9, 366.4, 351.9, 392.9, 366.4, 351.9, 351.9, 366.4, 351.9, 392.9, 366.4, 351.9, 351.9, 327.6, 325.1, 344.8, 344.8, 344.8, 361.9, 366.4, 351.9, 366.4, 308.1, 327.6, 429.5, 484.3, 351.9, 351.9, 358.7, 351.1, 326.5, 386.3, 406.0, 351.9, 469.0, 366.1, 399.4, 366.1, 366.1, 436.9, 495.8, 464.0, 418.0, 394.2, 358.7, 399.4, 406.0, 358.7, 351.9, 351.9, 325.1, 325.1, 344.8, 361.9, 513.0, 351.9, 351.9, 358.7, 358.7, 469.0, 351.9, 308.1, 449.0], "rf": [300.8, 312.2, 327.6, 376.4, 378.9, 391.7, 363.5, 336.2, 334.8, 336.3, 366.9, 344.2, 352.0, 326.9, 321.6, 332.6, 331.0, 333.8, 358.5, 358.9, 349.1, 349.2, 284.8, 344.5, 349.1, 323.9, 320.9, 350.2, 359.4, 330.5, 365.4, 338.1, 375.4, 381.7, 363.1, 347.6, 367.5, 349.4, 364.1, 375.5, 363.6, 346.3, 351.3, 328.6, 341.6, 336.5, 343.9, 375.1, 362.4, 342.0, 348.1, 309.7, 318.7, 448.0, 465.2, 354.7, 347.1, 352.6, 332.3, 324.4, 375.3, 384.6, 365.5, 375.8, 376.6, 411.2, 385.3, 405.2, 413.1, 496.5, 500.3, 460.0, 408.9, 388.1, 423.3, 407.8, 350.8, 358.2, 348.6, 325.2, 366.4, 347.4, 340.6, 456.4, 372.1, 338.3, 355.5, 341.8, 387.9, 362.2, 317.0, 449.9], "lr_mae": 27.02, "tree_mae": 29.0, "rf_mae": 26.47}, "수원역매장": {"dates": ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31"], "actual": [240, 236, 277, 245, 282, 296, 229, 196, 250, 233, 347, 335, 383, 302, 267, 285, 248, 273, 287, 287, 296, 219, 265, 243, 243, 301, 326, 245, 230, 244, 270, 272, 333, 301, 337, 275, 218, 253, 255, 226, 285, 294, 225, 213, 249, 214, 257, 241, 253, 221, 236, 238, 243, 295, 345, 309, 283, 264, 242, 279, 309, 316, 323, 277, 262, 307, 286, 348, 238, 261, 203, 168, 245, 203, 291, 304, 238, 259, 242, 200, 232, 264, 228, 290, 189, 189, 208, 208, 217, 274, 305, 353], "linear": [217.6, 229.1, 263.6, 251.9, 244.0, 321.1, 243.0, 206.3, 239.5, 227.4, 329.2, 348.6, 394.8, 296.1, 241.5, 305.7, 255.9, 255.1, 273.6, 273.9, 263.6, 225.6, 251.6, 236.5, 242.8, 271.9, 301.2, 235.5, 228.0, 209.4, 228.5, 261.6, 290.6, 257.5, 265.5, 250.7, 234.0, 239.3, 262.5, 237.1, 256.6, 282.5, 252.3, 229.3, 246.2, 197.5, 247.6, 251.4, 235.0, 183.0, 196.1, 208.2, 199.9, 229.5, 266.3, 288.0, 250.8, 223.6, 225.1, 232.5, 261.9, 281.1, 299.0, 256.3, 249.9, 297.2, 277.3, 302.0, 287.6, 240.5, 205.6, 232.2, 222.6, 220.5, 279.6, 298.1, 265.4, 224.9, 223.9, 212.1, 207.5, 269.7, 281.6, 295.4, 229.1, 215.2, 202.3, 192.4, 233.6, 240.3, 288.6, 342.7], "tree": [273.6, 207.7, 207.7, 230.8, 207.7, 243.9, 201.9, 207.7, 230.8, 207.7, 309.6, 344.0, 344.0, 276.1, 274.3, 264.9, 283.1, 283.1, 284.2, 269.7, 276.1, 243.9, 264.9, 243.9, 243.9, 264.9, 283.3, 276.1, 264.9, 201.9, 243.9, 243.9, 243.9, 301.0, 276.1, 274.3, 248.9, 248.9, 264.9, 301.0, 243.9, 301.0, 273.6, 207.7, 251.7, 207.7, 207.7, 280.9, 246.4, 207.7, 207.7, 207.7, 207.7, 207.7, 280.9, 305.9, 243.9, 243.9, 248.9, 248.9, 284.2, 324.6, 308.3, 274.3, 248.9, 264.9, 274.3, 274.3, 324.6, 248.9, 248.9, 243.9, 207.7, 207.7, 251.7, 280.9, 246.4, 207.7, 207.7, 207.7, 207.7, 230.8, 280.9, 313.5, 230.8, 207.7, 207.7, 207.7, 207.7, 252.8, 276.6, 309.6], "rf": [258.4, 242.3, 234.1, 251.2, 237.2, 289.8, 247.3, 227.6, 251.4, 250.0, 322.8, 344.6, 354.0, 279.5, 271.8, 297.8, 275.1, 266.5, 268.9, 290.8, 264.7, 260.8, 275.3, 238.3, 250.3, 271.7, 295.6, 255.1, 250.2, 228.2, 245.5, 247.6, 251.7, 288.5, 265.8, 270.0, 258.2, 256.7, 265.1, 253.1, 265.3, 274.9, 283.9, 230.5, 249.9, 212.5, 226.7, 268.7, 234.1, 202.5, 202.8, 210.6, 203.9, 224.7, 262.2, 269.5, 255.0, 249.6, 241.7, 244.4, 284.6, 318.0, 305.4, 299.9, 276.9, 292.0, 289.0, 308.3, 309.7, 269.8, 254.7, 227.2, 231.1, 225.5, 257.1, 264.8, 255.1, 202.8, 205.9, 215.9, 193.2, 247.3, 271.0, 287.3, 252.0, 201.5, 191.4, 199.1, 209.5, 233.3, 262.3, 311.6], "lr_mae": 22.58, "tree_mae": 28.24, "rf_mae": 25.39}, "양재역매장": {"dates": ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31"], "actual": [236, 324, 352, 292, 262, 337, 369, 346, 238, 281, 270, 301, 363, 336, 233, 312, 288, 275, 314, 289, 322, 259, 247, 265, 305, 252, 395, 325, 211, 190, 315, 286, 300, 379, 344, 280, 337, 363, 254, 327, 376, 360, 309, 273, 292, 334, 293, 338, 462, 278, 331, 333, 244, 239, 362, 327, 265, 270, 253, 325, 318, 350, 322, 245, 266, 323, 341, 377, 333, 359, 272, 293, 301, 299, 343, 373, 424, 359, 335, 296, 354, 331, 364, 317, 357, 348, 271, 232, 263, 344, 349, 263], "linear": [244.6, 264.5, 323.4, 277.8, 272.9, 327.4, 357.3, 349.7, 262.9, 285.3, 259.6, 273.5, 334.8, 315.8, 220.2, 251.0, 263.2, 282.7, 301.0, 298.8, 292.4, 263.6, 268.2, 252.8, 285.3, 261.4, 435.1, 380.5, 247.0, 224.0, 262.4, 268.6, 257.0, 334.1, 304.3, 252.1, 261.4, 317.5, 253.0, 292.4, 341.4, 296.8, 298.1, 276.4, 275.2, 294.6, 305.0, 305.2, 424.1, 289.4, 310.2, 323.0, 255.4, 282.4, 348.6, 320.8, 268.3, 252.5, 245.1, 270.9, 300.5, 315.0, 292.6, 232.5, 249.1, 278.3, 295.4, 341.2, 319.0, 321.2, 265.5, 263.3, 275.1, 279.1, 289.0, 355.3, 352.0, 349.9, 282.4, 275.2, 296.3, 328.7, 350.0, 315.2, 281.4, 330.6, 301.1, 285.4, 274.2, 339.2, 322.2, 257.6], "tree": [274.3, 264.9, 274.3, 283.1, 283.1, 307.3, 386.0, 351.5, 283.1, 248.5, 248.9, 284.2, 324.6, 300.2, 274.3, 248.9, 274.3, 274.3, 283.3, 269.7, 308.3, 274.3, 248.9, 248.9, 264.9, 274.3, 377.7, 398.0, 274.3, 248.9, 264.9, 274.3, 243.9, 269.7, 308.3, 274.3, 248.9, 327.1, 283.1, 283.1, 327.1, 283.1, 300.2, 283.1, 283.1, 327.1, 283.1, 334.3, 415.4, 327.1, 327.1, 308.8, 283.1, 248.5, 338.4, 334.3, 274.3, 248.9, 248.9, 243.9, 283.3, 269.7, 308.3, 274.3, 248.9, 248.9, 274.3, 338.4, 283.1, 334.3, 283.1, 327.1, 283.1, 327.1, 283.1, 283.1, 327.1, 327.1, 283.1, 308.1, 308.1, 342.5, 308.1, 308.1, 327.1, 310.2, 308.8, 283.1, 283.1, 300.2, 308.3, 327.1], "rf": [280.1, 257.2, 281.4, 297.3, 303.2, 305.4, 378.1, 378.2, 314.7, 283.4, 272.3, 272.7, 326.3, 306.7, 267.5, 248.8, 268.5, 282.2, 300.6, 300.6, 295.9, 281.3, 251.4, 250.7, 277.0, 282.3, 403.7, 388.1, 281.2, 243.2, 248.9, 284.7, 263.8, 313.6, 300.5, 284.4, 274.2, 330.2, 290.6, 288.5, 335.5, 290.3, 312.4, 295.0, 281.7, 309.6, 316.0, 314.1, 415.6, 325.6, 318.5, 314.3, 301.2, 282.9, 306.1, 315.2, 277.4, 265.7, 257.1, 248.8, 296.5, 308.4, 307.7, 267.3, 259.0, 269.3, 317.0, 327.8, 314.5, 334.2, 304.5, 302.0, 303.3, 312.9, 294.7, 334.2, 333.6, 341.5, 307.6, 308.4, 299.1, 325.3, 311.0, 302.1, 324.3, 329.6, 328.0, 289.3, 280.9, 318.9, 319.0, 299.7], "lr_mae": 25.92, "tree_mae": 34.85, "rf_mae": 31.69}, "잠실역매장": {"dates": ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31"], "actual": [333, 335, 369, 409, 360, 455, 389, 432, 452, 425, 433, 426, 501, 517, 437, 451, 416, 456, 456, 453, 470, 384, 377, 361, 387, 471, 408, 451, 397, 395, 403, 513, 575, 457, 377, 404, 360, 333, 392, 423, 402, 417, 326, 404, 431, 347, 438, 407, 390, 408, 411, 415, 348, 373, 421, 394, 389, 476, 535, 500, 370, 405, 382, 373, 396, 373, 407, 375, 335, 436, 357, 373, 395, 496, 401, 435, 415, 343, 426, 365, 375, 439, 360, 317, 326, 332, 313, 296, 349, 356, 318, 296], "linear": [299.3, 339.2, 356.2, 352.6, 337.3, 387.7, 381.1, 342.5, 373.2, 387.8, 392.4, 375.7, 440.2, 434.2, 377.6, 391.1, 384.1, 405.2, 445.1, 433.5, 449.4, 363.4, 352.2, 360.4, 340.9, 392.5, 380.2, 411.3, 363.9, 347.2, 349.7, 474.3, 523.0, 497.7, 385.1, 405.3, 386.1, 363.0, 378.9, 397.8, 404.3, 366.4, 303.9, 348.8, 354.7, 329.0, 393.1, 397.8, 367.2, 342.7, 373.7, 365.6, 357.6, 351.8, 405.2, 368.9, 344.4, 428.4, 471.2, 475.0, 399.5, 439.2, 397.6, 354.8, 380.5, 361.1, 343.2, 368.4, 379.5, 377.5, 348.2, 344.9, 336.3, 437.2, 385.6, 531.1, 416.0, 345.9, 386.6, 384.7, 368.1, 416.0, 416.6, 352.7, 335.4, 333.6, 284.0, 303.5, 345.1, 360.2, 299.8, 272.5], "tree": [308.1, 326.5, 326.5, 399.4, 342.5, 308.1, 366.1, 399.4, 399.4, 399.4, 399.4, 394.2, 406.0, 441.2, 416.3, 416.3, 416.3, 416.3, 416.3, 513.0, 416.3, 416.3, 394.2, 394.2, 351.1, 394.2, 406.0, 441.2, 394.2, 394.2, 394.2, 445.3, 476.3, 543.7, 416.3, 416.3, 416.3, 416.3, 358.7, 399.4, 406.0, 441.2, 366.1, 358.7, 366.1, 394.2, 386.3, 406.0, 394.2, 399.4, 399.4, 394.2, 394.2, 326.5, 406.0, 394.2, 399.4, 397.0, 445.3, 476.3, 416.3, 406.0, 394.2, 394.2, 394.2, 394.2, 394.2, 366.1, 406.0, 326.5, 366.1, 326.5, 399.4, 445.3, 399.4, 495.8, 441.2, 394.2, 351.1, 394.2, 326.5, 399.4, 406.0, 326.5, 326.5, 326.5, 308.1, 308.1, 338.4, 334.3, 283.1, 300.2], "rf": [326.6, 331.1, 330.3, 351.8, 346.9, 326.7, 343.7, 343.1, 341.4, 371.6, 387.1, 370.6, 429.1, 409.5, 401.8, 402.2, 399.9, 415.6, 430.5, 474.0, 434.0, 409.9, 375.0, 370.9, 351.4, 380.6, 411.4, 383.8, 376.9, 363.8, 359.3, 461.7, 483.5, 481.2, 412.7, 416.7, 398.9, 361.4, 348.2, 386.6, 390.6, 350.8, 345.0, 344.6, 325.8, 354.8, 379.1, 385.0, 361.7, 333.0, 371.2, 380.1, 356.6, 358.0, 399.4, 353.2, 357.1, 445.7, 459.0, 469.6, 385.0, 437.8, 396.5, 380.1, 384.3, 390.4, 346.3, 356.1, 374.2, 338.3, 357.6, 348.8, 344.4, 454.1, 361.2, 493.4, 405.8, 363.6, 355.2, 395.1, 374.3, 381.2, 399.6, 350.6, 325.9, 325.4, 292.2, 274.6, 343.3, 338.8, 306.1, 297.4], "lr_mae": 33.24, "tree_mae": 33.94, "rf_mae": 36.98}};
+    const storeInterp03 = {"판교역매장": "8월 하순(8/27 등) 주문량이 547건으로 치솟는 고매출 구간에서 단일 의사결정나무는 과거 학습 범위(360.7건)에 갇혀 심각한 과소 예측(오차 186.3건)을 보였습니다. 반면 선형회귀(MAE 27.06건)는 영업시간 및 시차 추세를 안정적으로 비례 반영하여 3개 모델 중 가장 뛰어난 적중률을 기록했습니다.", "강남역매장": "전체 매장 중 유일하게 300개 트리를 결합한 랜덤포레스트(MAE 26.47건)가 선형회귀(27.02건)보다 근소하게 더 우수한 성능을 보인 플래그십 매장입니다. 대규모 고객 유입으로 인한 복잡한 상권 특성이 앙상블 모델에 의해 일부 보정되었습니다.", "수원역매장": "5개 매장 중 전 모델 평균 오차가 가장 낮은 안정적인 매장입니다. 선형회귀의 MAE가 22.58건으로 최저치를 기록했으며, 주말 및 평일의 주기적인 리듬이 뚜렷하여 모든 알고리즘에서 예측 오차가 작았습니다.", "양재역매장": "선형회귀(MAE 25.92건)가 대표 의사결정나무(34.85건) 및 랜덤포레스트(31.69건) 대비 확연한 오차 개선 효과(약 6~9건 감소)를 나타냈습니다. 비선형 모델의 불필요한 변동성을 선형회귀가 효과적으로 통제했습니다.", "잠실역매장": "주변 대형 행사 및 주말 몰 유입으로 변동성이 가장 큰 매장입니다. 랜덤포레스트(MAE 36.98건)가 단일 나무(33.94건)보다 오히려 오차가 컸으나, 선형회귀(33.24건)가 침착하게 최저 오차를 유지했습니다."};
+    let storeChart;
+
+    function renderStoreChart(storeName) {
+      const data = storeData03[storeName];
+      document.getElementById('s3-lr-mae').innerText = data.lr_mae + '건';
+      document.getElementById('s3-tree-mae').innerText = data.tree_mae + '건';
+      document.getElementById('s3-rf-mae').innerText = data.rf_mae + '건';
+      document.getElementById('s3-chart-title').innerText = storeName + ' 실제 주문량 vs 3대 모델 예측 (2026.06~08)';
+      document.getElementById('s3-interp-title').innerText = storeName + ' 현장 분석 의견';
+      document.getElementById('s3-interp-desc').innerText = storeInterp03[storeName];
+
+      const ctx = document.getElementById('storeTimeseriesChart').getContext('2d');
+      if (storeChart) storeChart.destroy();
+
+      storeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.dates,
+          datasets: [
+            {
+              label: '실제 주문량',
+              data: data.actual,
+              borderColor: '#0f172a',
+              backgroundColor: 'rgba(15, 23, 42, 0.05)',
+              borderWidth: 2.5,
+              pointRadius: 2,
+              tension: 0.1,
+              order: 1
+            },
+            {
+              label: '선형회귀 예측',
+              data: data.linear,
+              borderColor: '#2563eb',
+              borderWidth: 1.8,
+              borderDash: [4, 4],
+              pointRadius: 2,
+              tension: 0.1,
+              order: 2
+            },
+            {
+              label: '랜덤포레스트 예측',
+              data: data.rf,
+              borderColor: '#10b981',
+              borderWidth: 1.8,
+              borderDash: [6, 3],
+              pointRadius: 2,
+              tension: 0.1,
+              order: 3
+            },
+            {
+              label: '대표 의사결정나무 예측',
+              data: data.tree,
+              borderColor: '#ef4444',
+              borderWidth: 1.8,
+              borderDash: [2, 2],
+              pointRadius: 2,
+              tension: 0.1,
+              order: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 14, font: { weight: '600' } }
+            },
+            tooltip: {
+              callbacks: {
+                afterBody: function(items) {
+                  const actual = items[0].raw;
+                  let lines = [];
+                  for (let i = 1; i < items.length; i++) {
+                    const diff = Math.abs(actual - items[i].raw).toFixed(1);
+                    lines.push(items[i].dataset.label.replace(' 예측', '') + ' 오차: ' + diff + '건');
+                  }
+                  return lines.join('\n');
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              title: { display: true, text: '주문건수', font: { weight: 'bold' } },
+              beginAtZero: false,
+              grid: { color: '#f1f5f9' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function updateStoreSection() {
+      const selected = document.getElementById('storeSelect03').value;
+      renderStoreChart(selected);
+    }
+
+    // 초기 로드: 판교역매장 렌더링
+    renderStoreChart('판교역매장');
+
+    // 섹션 4: 9~10월 최종 평가 매장별 인터랙티브 차트
+    const finalStoreData = {"강남역매장": {"dates": ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "actual": [385, 413, 273, 324, 320, 338, 289, 292, 262, 265, 284, 345, 281, 281, 299, 339, 405, 456, 400, 331, 276, 289, 315, 371, 328, 431, 342, 394, 348, 362, 323, 353, 384, 374, 323, 306, 307, 285, 448, 475, 296, 336, 273, 405, 379, 444, 305, 273, 260, 335, 283, 286, 410, 343, 420, 386, 428, 387, 323, 372, 321], "pred": [435.2, 471.6, 366.5, 353.0, 384.9, 390.7, 336.8, 346.8, 301.9, 291.2, 311.6, 360.0, 319.8, 274.7, 291.2, 303.2, 433.5, 492.0, 423.3, 387.4, 327.6, 377.5, 328.7, 334.9, 353.7, 399.6, 376.1, 402.7, 348.9, 333.0, 342.3, 326.9, 400.6, 378.5, 336.2, 305.6, 308.6, 314.6, 434.8, 488.5, 350.0, 312.7, 318.4, 422.8, 420.1, 467.7, 357.1, 329.4, 300.5, 317.7, 309.8, 309.3, 409.4, 363.4, 406.6, 396.5, 417.8, 399.8, 360.6, 405.2, 370.5], "mae": 30.5, "rmse": 36.53}, "판교역매장": {"dates": ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "actual": [577, 575, 542, 452, 595, 486, 398, 437, 448, 466, 458, 543, 628, 453, 439, 452, 451, 456, 578, 587, 518, 462, 460, 497, 537, 529, 518, 476, 428, 425, 594, 522, 663, 465, 429, 358, 418, 422, 504, 504, 515, 378, 400, 381, 299, 427, 399, 410, 303, 368, 344, 404, 398, 388, 572, 481, 487, 377, 387, 463, 451], "pred": [573.3, 595.7, 565.5, 500.7, 600.2, 503.6, 436.2, 456.7, 447.0, 442.2, 454.4, 502.8, 592.5, 427.2, 415.1, 461.1, 450.2, 441.8, 577.5, 573.2, 533.9, 455.4, 447.2, 481.8, 523.1, 536.5, 526.1, 458.4, 449.7, 444.0, 544.7, 564.5, 641.4, 500.6, 442.6, 403.9, 408.9, 389.2, 462.2, 453.8, 440.9, 382.7, 385.7, 394.1, 358.2, 403.1, 434.8, 384.9, 322.4, 342.4, 350.9, 389.8, 361.6, 369.3, 508.5, 506.6, 491.1, 400.1, 411.6, 425.3, 437.4], "mae": 23.18, "rmse": 28.29}, "수원역매장": {"dates": ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "actual": [192, 306, 195, 197, 256, 275, 255, 223, 255, 223, 208, 292, 223, 170, 255, 309, 219, 237, 253, 239, 231, 211, 220, 254, 260, 261, 209, 138, 109, 183, 186, 195, 261, 170, 194, 147, 157, 134, 234, 221, 269, 148, 235, 148, 238, 229, 296, 219, 175, 168, 303, 326, 194, 231, 215, 210, 190, 183, 253, 213, 196], "pred": [200.9, 258.5, 215.9, 232.9, 257.7, 265.7, 237.7, 210.7, 252.5, 238.2, 213.0, 289.1, 240.7, 195.1, 281.3, 331.1, 218.1, 245.9, 264.6, 225.2, 216.0, 218.6, 250.3, 231.8, 282.3, 277.3, 251.9, 185.0, 181.5, 194.8, 170.3, 204.0, 245.1, 178.7, 180.1, 157.1, 180.2, 159.3, 187.1, 232.9, 271.0, 152.9, 193.6, 160.8, 229.3, 210.9, 264.7, 211.5, 177.9, 161.3, 257.6, 331.4, 234.4, 223.6, 220.4, 173.6, 187.2, 211.5, 232.6, 217.9, 212.6], "mae": 18.42, "rmse": 23.55}, "양재역매장": {"dates": ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "actual": [233, 300, 273, 417, 328, 419, 271, 325, 343, 336, 287, 333, 352, 266, 265, 278, 274, 312, 320, 326, 328, 311, 315, 393, 419, 378, 333, 314, 325, 319, 295, 326, 362, 358, 308, 300, 265, 268, 325, 311, 349, 359, 313, 199, 283, 305, 312, 358, 261, 286, 271, 280, 354, 348, 391, 252, 262, 238, 287, 304, 269], "pred": [269.2, 270.5, 245.1, 411.1, 316.5, 387.8, 273.9, 309.4, 290.3, 310.6, 289.7, 283.1, 330.8, 277.2, 278.2, 281.9, 252.2, 298.1, 295.6, 308.5, 275.0, 273.7, 239.3, 323.3, 363.3, 378.5, 326.7, 300.4, 308.3, 313.9, 295.7, 328.1, 346.2, 320.9, 303.5, 255.1, 277.4, 238.6, 305.7, 273.2, 326.6, 372.9, 361.4, 221.2, 268.2, 289.6, 288.2, 301.9, 264.4, 274.1, 243.6, 228.0, 288.8, 300.4, 338.9, 257.0, 250.2, 218.2, 268.2, 271.6, 256.2], "mae": 25.14, "rmse": 31.41}, "잠실역매장": {"dates": ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "actual": [346, 287, 343, 339, 332, 265, 282, 265, 247, 240, 335, 302, 300, 262, 311, 309, 280, 272, 283, 284, 304, 300, 314, 368, 360, 332, 304, 313, 291, 297, 337, 362, 306, 323, 323, 224, 275, 273, 445, 445, 344, 267, 308, 260, 237, 271, 301, 290, 230, 180, 277, 210, 338, 318, 406, 261, 281, 306, 284, 292, 300], "pred": [315.0, 292.6, 327.2, 339.6, 354.6, 325.1, 290.1, 267.4, 251.8, 237.5, 294.3, 316.2, 283.3, 258.6, 275.7, 288.6, 273.5, 281.5, 304.1, 287.3, 259.4, 241.6, 299.8, 366.0, 365.8, 358.6, 325.6, 297.6, 287.2, 296.9, 265.6, 307.0, 356.1, 313.8, 319.1, 244.4, 277.0, 282.2, 404.3, 441.4, 350.5, 265.2, 310.9, 249.4, 280.5, 294.0, 322.5, 312.1, 210.2, 204.6, 219.6, 202.8, 283.1, 271.5, 360.1, 243.4, 245.9, 252.5, 268.5, 285.8, 344.4], "mae": 22.01, "rmse": 29.09}};
+    let finalChart;
+
+    function renderFinalChart(storeName) {
+      const d = finalStoreData[storeName];
+      document.getElementById('s4-store-mae').innerText = d.mae + '건';
+      document.getElementById('s4-store-rmse').innerText = d.rmse + '건';
+      document.getElementById('s4-chart-title').innerText = storeName + ' 9~10월 실제 주문량 vs 선형회귀 최종 예측 (Test)';
+
+      const ctx = document.getElementById('finalTimeseriesChart').getContext('2d');
+      if (finalChart) finalChart.destroy();
+
+      finalChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: d.dates,
+          datasets: [
+            {
+              label: '실제 주문건수',
+              data: d.actual,
+              borderColor: '#0f172a',
+              backgroundColor: 'rgba(15, 23, 42, 0.05)',
+              borderWidth: 2.2,
+              pointRadius: 2.5,
+              tension: 0.1
+            },
+            {
+              label: '선형회귀 최종 예측',
+              data: d.pred,
+              borderColor: '#2563eb',
+              borderWidth: 2.0,
+              borderDash: [4, 4],
+              pointRadius: 2.5,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 14, font: { weight: '600' } } },
+            tooltip: {
+              callbacks: {
+                afterBody: function(items) {
+                  const diff = Math.abs(items[0].raw - items[1].raw).toFixed(1);
+                  return '예측 오차: ' + diff + '건';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              title: { display: true, text: '주문건수', font: { weight: 'bold' } },
+              beginAtZero: false,
+              grid: { color: '#f1f5f9' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function updateFinalSection() {
+      const selected = document.getElementById('storeSelect04').value;
+      renderFinalChart(selected);
+    }
+
+    // 초기 렌더링: 강남역매장
+    renderFinalChart('강남역매장');
+  </script>
+</body>
+</html>

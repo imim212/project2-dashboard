@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>의사결정나무 (깊이 2) 다이어그램</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 30px;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+      max-width: 1050px;
+      width: 100%;
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.4rem;
+      color: #0f172a;
+    }
+    p.desc {
+      color: #64748b;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .tree-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      position: relative;
+    }
+    .level {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+    }
+    .node {
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 14px 18px;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .node:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px -1px rgba(59, 130, 246, 0.25);
+    }
+    .node.leaf {
+      border-color: #10b981;
+      background: #f0fdf4;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+    }
+    .node.leaf:hover {
+      box-shadow: 0 8px 12px -1px rgba(16, 185, 129, 0.25);
+    }
+    .condition {
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: #1e40af;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .leaf .condition {
+      color: #065f46;
+      border-bottom-color: #a7f3d0;
+    }
+    .stat {
+      font-size: 0.88rem;
+      color: #475569;
+      margin: 3px 0;
+    }
+    .badge-val {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .badge-samples {
+      color: #2563eb;
+      font-weight: 600;
+    }
+    .leaf .badge-samples {
+      color: #059669;
+    }
+    .badge-pred {
+      color: #dc2626;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+    .branch-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .summary-box {
+      margin-top: 25px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🌳 의사결정나무 (깊이 2) 구조 및 분기 조건</h2>
+    <p class="desc">전체 2,850건의 학습 데이터를 <strong>최근7일평균주문건수</strong> 기준으로 2단계 나누어 4개의 잎(Leaf) 그룹으로 예측합니다.</p>
+
+    <div class="tree-wrapper">
+      <!-- 루트 노드 -->
+      <div class="level">
+        <div class="node">
+          <div class="condition">최근7일평균주문건수 ≤ 307.07건</div>
+          <div class="stat">학습 기록수: <span class="badge-samples">2,850개</span></div>
+          <div class="stat">전체 평균: <span class="badge-val">316.92건</span></div>
+          <div class="branch-labels">
+            <span>◀ 참(True)</span>
+            <span>거짓(False) ▶</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 중간 노드 (깊이 1) -->
+      <div class="level" style="gap: 140px;">
+        <div class="node">
+          <div class="condition">최근7일평균주문건수 ≤ 258.71건</div>
+          <div class="stat">기록수: <span class="badge-samples">1,344개</span></div>
+          <div class="stat">그룹 평균: <span class="badge-val">243.18건</span></div>
+          <div class="branch-labels">
+            <span>◀ 참(True)</span>
+            <span>거짓(False) ▶</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="condition">최근7일평균주문건수 ≤ 372.07건</div>
+          <div class="stat">기록수: <span class="badge-samples">1,506개</span></div>
+          <div class="stat">그룹 평균: <span class="badge-val">382.73건</span></div>
+          <div class="branch-labels">
+            <span>◀ 참(True)</span>
+            <span>거짓(False) ▶</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최종 잎 노드 (깊이 2, Leaf) -->
+      <div class="level" style="gap: 20px;">
+        <div class="node leaf">
+          <div class="condition">🍃 잎 1 (저매출 그룹)</div>
+          <div class="stat">조건: <strong>≤ 258.71건</strong></div>
+          <div class="stat">기록수: <span class="badge-samples">913개</span></div>
+          <div class="stat">예측 주문건수: <span class="badge-pred">223.25건</span></div>
+        </div>
+
+        <div class="node leaf">
+          <div class="condition">🍃 잎 2 (중하위 그룹)</div>
+          <div class="stat">조건: <strong>258.71 ~ 307.07건</strong></div>
+          <div class="stat">기록수: <span class="badge-samples">431개</span></div>
+          <div class="stat">예측 주문건수: <span class="badge-pred">285.41건</span></div>
+        </div>
+
+        <div class="node leaf">
+          <div class="condition">🍃 잎 3 (중상위 그룹)</div>
+          <div class="stat">조건: <strong>307.07 ~ 372.07건</strong></div>
+          <div class="stat">기록수: <span class="badge-samples">678개</span></div>
+          <div class="stat">예측 주문건수: <span class="badge-pred">338.26건</span></div>
+        </div>
+
+        <div class="node leaf">
+          <div class="condition">🍃 잎 4 (고매출 그룹)</div>
+          <div class="stat">조건: <strong>> 372.07건</strong></div>
+          <div class="stat">기록수: <span class="badge-samples">828개</span></div>
+          <div class="stat">예측 주문건수: <span class="badge-pred">419.14건</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-box">
+      <strong>💡 해석 및 관찰 포인트:</strong><br>
+      1. 깊이 2 나무는 29개의 입력 변수 중 가장 정보 이득(오차 감소폭)이 큰 <strong>'최근7일평균주문건수'</strong> 하나만을 연속으로 사용하여 4개 구간으로 데이터를 분할했습니다.<br>
+      2. 도착한 잎(Leaf)의 <strong>평균 주문건수</strong>가 해당 구간에 속하는 모든 날의 고정 예측값이 됩니다.<br>
+      3. 예측값이 단 4가지(223.25, 285.41, 338.26, 419.14건)로만 출력되므로, 요일별/매장별 섬세한 변화를 반영하지 못하는 <strong>과소적합(Underfitting)</strong> 특성을 보입니다.
+    </div>
+  </div>
+</body>
+</html>

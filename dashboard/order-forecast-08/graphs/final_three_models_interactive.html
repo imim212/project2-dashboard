@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>3개 모델 평가 MAE 비교</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 860px; margin: 0 auto; }
+    h2 { margin: 0 0 8px 0; color: #0f172a; font-size: 1.35rem; }
+    p.sub { color: #64748b; margin-bottom: 24px; font-size: 0.95rem; }
+    .chart-box { position: relative; height: 380px; width: 100%; }
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .metric-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .metric-card.winner {
+      background: #eff6ff;
+      border: 2px solid #3b82f6;
+      box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.15);
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .badge-win { background: #dbeafe; color: #1d4ed8; }
+    .badge-nor { background: #e2e8f0; color: #475569; }
+    .card-title { font-size: 0.92rem; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+    .card-mae { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+    .card-rmse { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🏆 6~8월 평가 기간(Validation) 최종 모델 비교</h2>
+    <p class="sub">매장 운영에 투입할 최종 모델 선정을 위한 3대 핵심 알고리즘의 오차 비교입니다.</p>
+
+    <div class="chart-box">
+      <canvas id="evalChart"></canvas>
+    </div>
+
+    <div class="cards-row">
+      <div class="metric-card winner">
+        <span class="badge badge-win">⭐ 최종 추천</span>
+        <div class="card-title">선형회귀</div>
+        <div class="card-mae" style="color:#2563eb;">27.16건</div>
+        <div class="card-rmse">평가 RMSE: 34.03건</div>
+      </div>
+      <div class="metric-card">
+        <span class="badge badge-nor">단일 나무</span>
+        <div class="card-title">대표 의사결정나무 (깊이 8)</div>
+        <div class="card-mae">33.08건</div>
+        <div class="card-rmse">평가 RMSE: 43.55건</div>
+      </div>
+      <div class="metric-card">
+        <span class="badge badge-nor">앙상블</span>
+        <div class="card-title">랜덤포레스트 (300개)</div>
+        <div class="card-mae">30.49건</div>
+        <div class="card-rmse">평가 RMSE: 38.39건</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('evalChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['선형회귀 (추천 모델)', '대표 의사결정나무 (깊이 8)', '랜덤포레스트 (나무 300개)'],
+        datasets: [{
+          label: '평가 MAE (건)',
+          data: [27.16, 33.08, 30.49],
+          backgroundColor: ['rgba(37, 99, 235, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(16, 185, 129, 0.8)'],
+          borderColor: ['#1d4ed8', '#d97706', '#059669'],
+          borderWidth: 1.5,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '평가 MAE: ' + context.raw + '건';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 40,
+            title: { display: true, text: '평균 절대 오차 (건)' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
